@@ -1,0 +1,70 @@
+---
+
+- name: "APPLY | {{ cis_code }} - modprobe config initialized"
+  lineinfile:
+    path: "{{ modprobe_filesystems_conf }}"
+    line: "# CIS configuration. Disabled file systems."
+    create: yes
+    state: present
+    owner: root
+    group: root
+  tags:
+    - apply
+
+- name: "APPLY | {{ cis_code }} - disable filesystem module"
+  lineinfile:
+    path: "{{ modprobe_filesystems_conf }}"
+    regexp: "^install {{ item }}"
+    line: "install {{ item }} /bin/true"
+  with_items: "{{ filesystems_to_disable }}"
+  tags:
+    - apply
+
+- name: "APPLY | {{ cis_code }} - remove filesystem module"
+  shell: |
+    rmmod {{ item }} 2>&1
+    if [[ $? -ne 0 ]]; then
+      echo "can't remove module ..."
+    else
+      echo "module removed ..."
+    fi
+  with_items: "{{ filesystems_to_disable }}"
+  register: cis_apply_tmp
+  tags:
+    - apply
+
+- name: "APPLY | {{ cis_code }} - set apply fact."
+  set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_apply":"{{ cis_apply_tmp }}"}
+  tags:
+    - apply
+
+- name: "APPLY | {{ cis_code }} - print removal status"
+  debug:
+    var: cis_apply_tmp
+  tags:
+    - apply
+
+- name: "POST | {{ cis_code }} - get filesystem module status"
+  shell: |
+    modprobe --dry-run --verbose {{ item }}
+    lsmod | grep {{ item }}
+  with_items: "{{ filesystems_to_disable }}"
+  register: cis_post_tmp
+  changed_when: False
+  failed_when: False
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - set post fact."
+  set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_post":"{{ cis_post_tmp }}"}
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - print filsystem module status"
+  debug:
+    var: cis_post_tmp
+  tags:
+    - post
+    - debug
+
+...

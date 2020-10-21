@@ -1,0 +1,31 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '1.1.1.8'
+    cis_name: &cis_name Ensure mounting of FAT filesystems is disabled
+    cis_profile: &cis_profile level-1
+    cis_scored: &cis_scored scored
+    cis_section: &cis_section section-1
+  tags:
+    - always
+
+- name: "CIS {{ cis_code }} - {{ cis_name }}"
+  when:
+    ansible_architecture == "x86_64"
+  block:
+  - import_tasks: ../commons/disable-filesystem.yml
+    vars:
+      filesystems_to_disable:
+      - vfat
+      - fat
+      - fat16
+      - fat32
+      cis_code: *cis_code
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

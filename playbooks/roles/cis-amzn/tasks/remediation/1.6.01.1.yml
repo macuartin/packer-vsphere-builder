@@ -1,0 +1,165 @@
+---
+
+# TODO: This on should be set to enforcing later, when all the policies are ready.
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '1.6.1.1'
+    cis_name: &cis_name Ensure SELinux is not disabled in bootloader configuration
+    cis_profile: &cis_profile level-2
+    cis_scored: &cis_scored scored
+    cis_section: &cis_section section-1
+  tags:
+    - always
+
+- name: CIS {{ cis_code }} - {{ cis_name }}
+  block:
+
+  # Any boot selinux option is going to be removed
+  # Later - remove only selinux=0
+  - name: "APPLY | {{ cis_code }} - remove selinux option."
+    replace:
+      path: "{{ grub_menu }}"
+      regexp: '({{ grub_kernel }}.*)selinux=\S+(.*$)'
+      replace: '\1\2'
+    register: cis_apply_tmp_001
+    tags:
+      - apply
+
+  # Any boot enforcing option is going to be removed
+  # Later - remove only enforcing=0
+  - name: "APPLY | {{ cis_code }} - remove enforcing option."
+    replace:
+      path: "{{ grub_menu }}"
+      regexp: '({{ grub_kernel }}.*)enforcing=\S+(.*$)'
+      replace: '\1\2'
+    register: cis_apply_tmp_002
+    tags:
+      - apply
+
+  - name: "APPLY | {{ cis_code }} - update security option."
+    replace:
+      path: "{{ grub_menu }}"
+      regexp: "{{ item }}"
+      replace: '\1security=selinux\3'
+      backup: 'no'
+    with_items:
+      - '({{ grub_kernel }}.*\s+)(security=\S+)(\s+.+$)'
+      - '({{ grub_kernel }}.*\s+)(security=\S+)(\s+$)'
+      - '({{ grub_kernel }}.*\s+)(security=\S+)($)'
+    register: cis_apply_tmp_003
+    tags:
+      - apply
+
+  # Add an option to the end of kernel string
+  - name: "APPLY | {{ cis_code }} - add security option"
+    replace:
+      path: "{{ grub_menu }}"
+      regexp: '({{ grub_kernel }}((?!security=\S+).)*)$'
+      replace: '\1 security=selinux'
+      backup: 'no'
+    register: cis_apply_tmp_004
+    tags:
+      - apply
+
+  # - name: "APPLY | {{ cis_code }} - rebuild kernel"
+  #   shell:
+  #     yum reinstall --assumeyes kernel
+  #   args:
+  #     warn: False
+  #   register: cis_apply_tmp_005
+  #   when: >-
+  #     cis_apply_tmp_001 is changed
+  #     or cis_apply_tmp_002 is changed
+  #     or cis_apply_tmp_003 is changed
+  #     or cis_apply_tmp_004 is changed
+  #   tags:
+  #     - apply
+
+  - name: "APPLY | {{ cis_code }} - touch .autorelabel"
+    shell:
+      touch /.autorelabel
+    args:
+      warn: False
+    register: cis_apply_tmp_006
+    when: >-
+      cis_apply_tmp_001 is changed
+      or cis_apply_tmp_002 is changed
+      or cis_apply_tmp_003 is changed
+      or cis_apply_tmp_004 is changed
+    tags:
+      - apply
+
+  - import_tasks: ../commons/reboot-machine.yml
+    vars:
+      cis_code: *cis_code
+    when: >-
+      cis_apply_tmp_001 is changed
+      or cis_apply_tmp_002 is changed
+      or cis_apply_tmp_003 is changed
+      or cis_apply_tmp_004 is changed
+      or cis_apply_tmp_006 is changed
+
+  - name: "APPLY | {{ cis_code }} - set apply fact."
+    set_fact: 
+      "cis_{{ cis_code | regex_replace('[.]','_') }}_apply":
+        selinux: "{{ cis_apply_tmp_001 }}"
+        enforcing: "{{ cis_apply_tmp_002 }}"
+        security:
+          update: "{{ cis_apply_tmp_003 }}"
+          add: "{{ cis_apply_tmp_004 }}"
+        autorelabel: "{{ cis_apply_tmp_006 }}"
+      cis_apply_tmp_001:
+      cis_apply_tmp_002:
+      cis_apply_tmp_003:
+      cis_apply_tmp_004:
+      cis_apply_tmp_006:
+    tags:
+      - apply
+
+  - name: "POST | {{ cis_code }} - process kernel options."
+    shell: |
+      grep -E '{{ grub_kernel }}' {{ grub_menu }}
+    register: cis_post_tmp_001
+    failed_when: >-
+      cis_post_tmp_001.rc!=0 or
+      cis_post_tmp_001.stderr|length>0 or
+      (cis_post_tmp_001.stdout is search('selinux=0')) or
+      (cis_post_tmp_001.stdout is search('enforcing=0')) or
+      not (cis_post_tmp_001.stdout is search('security=selinux')) or
+      cis_post_tmp_001.stdout|length<=0
+    changed_when: False
+    tags:
+      - post
+
+    # This is not the goal of this check. Just make sure it's enabled
+    # not (cis_post_tmp_002.stdout is search('Current\s*mode:\s*permissive')) or
+  - name: "POST | {{ cis_code }} - process SE status."
+    shell: |
+      sestatus
+    register: cis_post_tmp_002
+    failed_when: >-
+      cis_post_tmp_002.rc!=0 or
+      cis_post_tmp_002.stderr|length>0 or
+      cis_post_tmp_002.stdout|length<=0
+    changed_when: False
+    tags:
+      - post
+
+  - name: "POST | {{ cis_code }} - set post fact."
+    set_fact:
+      "cis_{{ cis_code | regex_replace('[.]','_') }}_post":
+        kernel: "{{ cis_post_tmp_001 }}"
+        status: "{{ cis_post_tmp_002 }}"
+      cis_post_tmp_001:
+      cis_post_tmp_002:
+    tags:
+      - post
+
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

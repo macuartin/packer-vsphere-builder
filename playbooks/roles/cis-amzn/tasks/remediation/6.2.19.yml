@@ -1,0 +1,25 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '6.2.19'
+    cis_name: &cis_name Ensure no duplicate group names exist
+    cis_section: &cis_section section-6
+    cis_scored: &cis_scored scored
+    cis_profile: &cis_profile level-1
+  tags:
+    - always
+
+- name: "CIS {{ cis_code }} - {{ cis_name }}"
+  block:
+  - import_tasks: ../commons/script-post.yml
+    vars:
+      cis_script: "{{ role_path }}/scripts/cis-{{ cis_code }}.sh"
+      cis_code: *cis_code
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

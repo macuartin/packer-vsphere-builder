@@ -1,0 +1,118 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '4.1.18'
+    cis_name: &cis_name Ensure the audit configuration is immutable
+    cis_profile: &cis_profile level-2
+    cis_scored: &cis_scored scored
+    cis_section: &cis_section section-4
+  tags:
+    - always
+
+- name: CIS {{ cis_code }} - {{ cis_name }}
+  block:
+
+  # Make sure -e 2 is not in the middle.
+  - name: "APPLY | {{ cis_code }} - clean rules."
+    replace:
+      path: "{{ audit_rules }}"
+      regexp: '^\s*\-e\s*2\s*$'
+      replace: ''
+      backup: 'no'
+      # TODO: Validation
+      validate: '/bin/env true %s'
+    register: cis_apply_tmp
+    tags:
+      - apply
+
+  - name: "APPLY | {{ cis_code }} - remove blank lines."
+    shell: |
+     sed -e '/^\s*$/d' -i "{{ audit_rules }}"
+    args:
+      warn: false
+    register: cis_apply_tmp
+    tags:
+      - apply
+
+  # Add -e 2 to the end
+  - name: "APPLY | {{ cis_code }} - update rules."
+    lineinfile:
+      path: "{{ audit_rules }}"
+      line: "-e 2"
+      state: present
+      backup: 'no'
+      backrefs: 'no'
+      create: 'no'
+      # Scan till the end
+      firstmatch: 'no'
+      # TODO: validation
+      validate: '/bin/env true %s'
+    register: cis_apply_tmp
+    tags:
+      - apply
+
+  - name: "APPLY | {{ cis_code }} - set apply fact."
+    set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_apply":"{{ cis_apply_tmp }}"}
+    tags:
+      - apply
+
+  - name: "APPLY | {{ cis_code }} - restart service."
+    service:
+      name: auditd
+      state: restarted
+    register: cis_tmp_restart
+    when:
+      ansible_distribution_version not in ["(Karoo)", "7.6", "7.7"]
+    tags:
+      - apply
+
+  - name: "APPLY | {{ cis_code }} - restart service."
+    shell: |
+      service auditd restart
+  # service:
+  #   name: auditd
+  #   state: restarted
+  #   use: service
+    register: cis_tmp_restart
+    when:
+      ansible_distribution_version in ["(Karoo)", "7.6", "7.7"]
+    tags:
+      - apply
+
+    # Log immutability should be the last line
+  - name: "POST | {{ cis_code }} - get configuration info"
+    shell: |
+      grep "^\s*[^#]" /etc/audit/audit.rules | tail -1
+    register: cis_post_tmp
+    failed_when: >-
+      cis_post_tmp.rc!=0
+      or cis_post_tmp.stderr_lines | length >0
+      or not cis_post_tmp.stdout is search('-e 2')
+    tags:
+      - post
+
+    # Log immutability should be active
+  - name: "POST | {{ cis_code }} - get current runtime values."
+    shell: |
+      auditctl -s
+    failed_when: >-
+      cis_post_tmp.rc != 0
+      or not cis_post_tmp.stdout is search('enabled 2')
+      or cis_post_tmp.stderr|length>0
+    register: cis_post_tmp
+    tags:
+      - post
+
+  - name: "POST | {{ cis_code }} - set post fact."
+    set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_post":"{{ cis_post_tmp }}"}
+    tags:
+      - post
+
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

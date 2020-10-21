@@ -1,0 +1,39 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '3.1.1'
+    cis_name: &cis_name Ensure IP forwarding is disabled
+    cis_profile: &cis_profile level-1
+    cis_scored: &cis_scored scored
+    cis_section: &cis_section section-3
+  tags:
+    - always
+
+- name: CIS {{ cis_code }} - {{ cis_name }}
+  block:
+
+  - import_tasks: ../commons/set-sysctl.yml
+    vars:
+      param: net.ipv4.ip_forward
+      value: 0
+      cis_code: *cis_code
+
+  - import_tasks: ../commons/set-sysctl.yml
+    vars:
+      param: net.ipv4.conf.all.forwarding
+      value: 0
+      cis_code: *cis_code
+
+  - name: "APPLY | {{ cis_code }} - flash IPv4 routes"
+    command: "sysctl -w net.ipv4.route.flush=1"
+    tags:
+      - apply
+
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

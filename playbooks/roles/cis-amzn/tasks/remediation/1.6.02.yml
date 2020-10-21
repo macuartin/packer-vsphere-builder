@@ -1,0 +1,37 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '1.6.2'
+    cis_name: &cis_name Ensure SELinux is installed
+    cis_profile: &cis_profile level-2
+    cis_scored: &cis_scored scored
+    cis_section: &cis_section section-1
+  tags:
+    - always
+
+- name: CIS {{ cis_code }} - {{ cis_name }}
+  block:
+  - import_tasks: ../commons/enable-package.yml
+    vars:
+      packages_to_enable:
+        - libselinux
+        - selinux-policy
+        - selinux-policy-targeted
+        - selinux-policy-minimum
+        # Will conflict with:
+        # 1.6.1.5 Ensure the MCS Translation Service (mcstrans) is not installed (Scored)
+        # as it requires mcstrans installed
+        #- selinux-policy-mls
+        - policycoreutils
+        - libselinux-utils
+        - libselinux-python
+      cis_code: *cis_code
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...
+

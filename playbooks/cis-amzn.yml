@@ -1,0 +1,26 @@
+---
+
+- name: configure cis amzn
+  hosts: all
+  become: yes
+
+  vars:
+    foo: bar
+    grub_menu: '{{ "/boot/grub2/grub.cfg" if ansible_distribution_version in ["(Karoo)", "7.6", "7.7"] else "/boot/grub/menu.lst" }}'
+    grub_kernel_1: '^\s*kernel\s+'
+    grub_kernel_2: '^\s*linux\d*\s+'
+    grub_kernel: '{{ grub_kernel_2 if ansible_distribution_version in ["(Karoo)", "7.6", "7.7"] else grub_kernel_1 }}'
+    audit_rules: '{{ "/etc/audit/rules.d/audit.rules" if ansible_distribution_version in ["(Karoo)", "7.6", "7.7"] else "/etc/audit/audit.rules" }}'
+    sdh: '{{ "/dev/nvme1n1" if ansible_distribution_version in ["7.6", "7.7", "2018.03"] else "/dev/sdh" }}'
+    sdj: '{{ "/dev/nvme2n1" if ansible_distribution_version in ["7.6", "7.7", "2018.03"] else "/dev/sdj" }}'
+    sdl: '{{ "/dev/nvme3n1" if ansible_distribution_version in ["7.6", "7.7", "2018.03"] else "/dev/sdl" }}'
+    sdt: '{{ "/dev/nvme4n1" if ansible_distribution_version in ["7.6", "7.7", "2018.03"] else "/dev/sdt" }}'
+    sdv: '{{ "/dev/nvme5n1" if ansible_distribution_version in ["7.6", "7.7", "2018.03"] else "/dev/sdv" }}'
+    sdw: '{{ "/dev/nvme6n1" if ansible_distribution_version in ["7.6", "7.7", "2018.03"] else "/dev/sdw" }}'
+    part: '{{ "p1" if ansible_distribution_version in ["7.6", "7.7", "2018.03"] else "1" }}'
+    uid: '{{ 1000 if ansible_distribution_version in ["(Karoo)", "7.6", "7.7"] else 500 }}'
+
+  roles:
+    - cis-amzn
+
+...

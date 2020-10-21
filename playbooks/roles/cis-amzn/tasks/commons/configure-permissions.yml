@@ -1,0 +1,52 @@
+---
+
+- name: "APPLY | {{ cis_code }} - set {{ type }} permissions"
+  file:
+    path: "{{ path }}"
+    owner: "{{ owner }}"
+    group: "{{ group }}"
+    mode: "{{ mode }}"
+    state: touch
+  register: cis_apply_tmp
+  when: type == 'file'
+  tags:
+    - apply
+
+- name: "APPLY | {{ cis_code }} - set {{ type }} permissions"
+  file:
+    path: "{{ path }}"
+    owner: "{{ owner }}"
+    group: "{{ group }}"
+    mode: "{{ mode }}"
+    state: directory
+    recurse: yes
+  register: cis_apply_tmp
+  when: type == 'dir'
+  tags:
+    - apply
+
+- name: "APPLY | {{ cis_code }} - set apply fact."
+  set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_apply":"{{ cis_apply_tmp }}"}
+  tags:
+    - apply
+
+- name: "POST | {{ cis_code }} - get {{ type }} stats"
+  stat:
+    path: "{{ path }}"
+  register: cis_post_tmp
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - set post fact."
+  set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_post":"{{ cis_post_tmp }}"}
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - print {{ type }} stats"
+  debug:
+    var: cis_post_tmp
+  tags:
+    - post
+    - debug
+
+...

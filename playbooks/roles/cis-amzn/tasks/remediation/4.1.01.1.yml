@@ -1,0 +1,59 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '4.1.1.1'
+    cis_name: &cis_name Ensure audit log storage size is configured
+    cis_profile: &cis_profile level-2
+    cis_scored: &cis_scored scored
+    cis_section: &cis_section section-4
+  tags:
+    - always
+
+- name: CIS {{ cis_code }} - {{ cis_name }}
+  block:
+
+  - name: "APPLY | {{ cis_code }} - update /etc/audit/auditd.conf"
+    lineinfile:
+      path: /etc/audit/auditd.conf
+      regexp: '^\s*max_log_file\s*\=\s*.+$'
+      line: "max_log_file = 50"
+      state: present
+      backup: 'no'
+      backrefs: 'no'
+      create: 'no'
+      # Scan till the end
+      firstmatch: 'no'
+      # No validation available for /etc/audit/auditd.conf
+      validate: '/bin/env true %s'
+    register: cis_apply_tmp
+    tags:
+      - apply
+
+  - name: "APPLY | {{ cis_code }} - set apply fact."
+    set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_apply":"{{ cis_apply_tmp }}"}
+    tags:
+      - apply
+    
+  - name: "POST | {{ cis_code }} - get configuration info"
+    shell: |
+      grep max_log_file /etc/audit/auditd.conf
+    register: cis_post_tmp
+    failed_when: >-
+      cis_post_tmp.rc!=0
+      or cis_post_tmp.stderr_lines | length >0
+    tags:
+      - post
+
+  - name: "POST | {{ cis_code }} - set post fact."
+    set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_post":"{{ cis_post_tmp }}"}
+    tags:
+      - post
+    
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

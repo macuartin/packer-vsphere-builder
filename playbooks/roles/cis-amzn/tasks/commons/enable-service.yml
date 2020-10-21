@@ -1,0 +1,52 @@
+---
+
+# The check is going to fail if there are no specified services.
+
+- name: "APPLY | {{ cis_code }} - start and enable service"
+  service:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  with_items: "{{ services_to_enable }}"
+  register: cis_apply_tmp
+  tags:
+    - apply
+
+- name: "APPLY | {{ cis_code }} - set apply fact"
+  set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_apply":"{{ cis_apply_tmp }}"}
+  tags:
+    - apply
+
+- name: "POST | {{ cis_code }} - service status"
+  shell:
+    chkconfig --list {{ item }}
+  with_items: "{{ services_to_enable }}"
+  register: cis_post_tmp
+  when:
+    ansible_distribution_version not in ["(Karoo)", "7.6", "7.7"]
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - service status"
+  shell:
+    systemctl status {{ item }}
+  with_items: "{{ services_to_enable }}"
+  register: cis_post_tmp
+  when:
+    ansible_distribution_version in ["(Karoo)", "7.6", "7.7"]
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - set post fact"
+  set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_post":"{{ cis_post_tmp }}"}
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - service status"
+  debug:
+    var: cis_post_tmp
+  tags:
+    - post
+    - debug
+
+...

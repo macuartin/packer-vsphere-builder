@@ -1,0 +1,25 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '5.4.1.5'
+    cis_name: &cis_name Ensure all users last password change date is in the past
+    cis_profile: &cis_profile level-1
+    cis_scored: &cis_scored scored
+    cis_section: &cis_section section-5
+  tags:
+    - always
+
+- name: CIS {{ cis_code }} - {{ cis_name }}
+  block:
+  - import_tasks: ../commons/script-post.yml
+    vars:
+      cis_script: "{{ role_path }}/scripts/cis-5.4.01.5.sh"
+      cis_code: *cis_code
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

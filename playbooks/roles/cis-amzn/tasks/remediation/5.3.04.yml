@@ -1,0 +1,46 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '5.3.4'
+    cis_name: &cis_name Ensure password hashing algorithm is SHA-512
+    cis_profile: &cis_profile level-1
+    cis_scored: &cis_scored not_scored
+    cis_section: &cis_section section-5
+  tags:
+    - always
+
+- name: CIS {{ cis_code }} - {{ cis_name }}
+  block:
+
+  # TODO: APPLY
+
+  - name: "POST | {{ cis_code }} - gather kernel lines"
+    shell:
+      egrep '^password\s+sufficient\s+pam_unix.so' {{ item }}
+    with_items:
+      - /etc/pam.d/password-auth
+      - /etc/pam.d/system-auth
+    register: cis_post_tmp
+    failed_when: >-
+      cis_post_tmp.rc!=0 or
+      cis_post_tmp.stderr|length>0 or
+      not (cis_post_tmp.stdout is search('sha512')) or
+      cis_post_tmp.stdout|length<=0
+    tags:
+      - post
+
+  - name: "POST | {{ cis_code }} - set post fact."
+    set_fact: 
+      "cis_{{ cis_code | regex_replace('[.]','_') }}_post": "{{ cis_post_tmp }}"
+      cis_post_tmp:
+    tags:
+      - post
+
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

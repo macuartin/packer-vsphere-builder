@@ -1,0 +1,64 @@
+---
+
+- name: "APPLY | {{ cis_code }} - populate service facts"
+  service_facts:
+  tags:
+    - apply
+
+- name: "APPLY | {{ cis_code }} - stop and disable service"
+  service:
+    name: "{{ item }}"
+    enabled: no
+    state: stopped
+  with_items: "{{ services_to_disable }}"
+  when: "item in ansible_facts.services"
+  register: cis_apply_tmp
+  tags:
+    - apply
+
+- name: "APPLY | {{ cis_code }} - set apply fact"
+  set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_apply":"{{ cis_apply_tmp }}"}
+  tags:
+    - apply
+
+  # TODO: fail if service still in the system
+- name: "POST | {{ cis_code }} - populate service facts"
+  service_facts:
+  tags:
+    - post
+
+# TODO: fail task if the service is still present
+
+- name: "POST | {{ cis_code }} - service status"
+  shell:
+    chkconfig --list {{ item }}
+  with_items: "{{ services_to_disable }}"
+  when:
+    'item in ansible_facts.services and (ansible_distribution_version not in ["(Karoo)", "7.6", "7.7"])'
+  register: cis_post_tmp
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - service status"
+  shell:
+    systemctl status {{ item }}; exit 0
+  with_items: "{{ services_to_disable }}"
+  when:
+    'item in ansible_facts.services and (ansible_distribution_version in ["(Karoo)", "7.6", "7.7"])'
+  register: cis_post_tmp
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - set post fact"
+  set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_post":"{{ cis_post_tmp }}"}
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - service status"
+  debug:
+    var: cis_post_tmp
+  tags:
+    - post
+    - debug
+
+...

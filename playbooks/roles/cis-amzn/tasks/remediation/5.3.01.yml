@@ -1,0 +1,81 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '5.3.1'
+    cis_name: &cis_name Ensure password creation requirements are configured
+    cis_profile: &cis_profile level-1
+    cis_scored: &cis_scored scored
+    cis_section: &cis_section section-5
+  tags:
+    - always
+
+- name: CIS {{ cis_code }} - {{ cis_name }}
+  block:
+
+  - import_tasks: ../commons/set-pwquality-parameter.yml
+    vars:
+      param: minlen
+      value: 14
+      cis_code: *cis_code
+
+  - import_tasks: ../commons/set-pwquality-parameter.yml
+    vars:
+      param: dcredit
+      value: -1
+      cis_code: *cis_code
+
+  - import_tasks: ../commons/set-pwquality-parameter.yml
+    vars:
+      param: ucredit
+      value: -1
+      cis_code: *cis_code
+
+  - import_tasks: ../commons/set-pwquality-parameter.yml
+    vars:
+      param: ocredit
+      value: -1
+      cis_code: *cis_code
+
+  - import_tasks: ../commons/set-pwquality-parameter.yml
+    vars:
+      param: lcredit
+      value: -1
+      cis_code: *cis_code
+
+  - name: "POST | {{ cis_code }} - verify values"
+    shell: |
+      grep pam_pwquality.so /etc/pam.d/password-auth
+    register: cis_post_tmp
+    changed_when: False
+    failed_when:
+      cis_post_tmp.rc!=0 or
+      not (cis_post_tmp.stdout is search('try_first_pass')) or
+      cis_post_tmp.stderr|length>0
+    tags:
+      - post
+
+  - name: "POST | {{ cis_code }} - verify values"
+    shell: |
+      grep pam_pwquality.so /etc/pam.d/system-auth
+    register: cis_post_tmp
+    changed_when: False
+    failed_when:
+      cis_post_tmp.rc!=0 or
+      not (cis_post_tmp.stdout is search('try_first_pass')) or
+      cis_post_tmp.stderr|length>0
+    tags:
+      - post
+    
+  - name: "POST | {{ cis_code }} - set post fact."
+    set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_post":"{{ cis_post_tmp }}"}
+    tags:
+      - post
+    
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

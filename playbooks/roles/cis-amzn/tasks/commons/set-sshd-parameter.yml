@@ -1,0 +1,44 @@
+---
+
+  # TODO: line after a commented out parameter
+- name: "APPLY | {{ cis_code }} - update parameter"
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^{{ param }}\\s"
+    line: "{{ param }} {{ value }}"
+    state: present  
+    backup: no
+    backrefs: no
+    create: no
+    validate: 'sshd -t -f %s'
+    insertafter: "^\\s*\\#+\\s*{{ param }}\\s+"
+  register: cis_apply_tmp
+  tags:
+    - apply
+
+- name: "APPLY | {{ cis_code }} - set apply fact"
+  set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_apply":"{{ cis_apply_tmp }}"}
+  tags:
+    - apply
+
+  # Parameter should be here anyway
+- name: "POST | {{ cis_code }} - get current info"
+  shell: |
+    grep -E "^{{ param }}[[:space:]]" /etc/ssh/sshd_config
+  register: cis_post_tmp
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - set post fact"
+  set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_post":"{{ cis_post_tmp }}"}
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - service status"
+  debug:
+    var: cis_post_tmp
+  tags:
+    - post
+    - debug
+
+...

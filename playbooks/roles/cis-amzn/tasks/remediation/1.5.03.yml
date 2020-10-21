@@ -1,0 +1,63 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '1.5.3'
+    cis_name: &cis_name Ensure address space layout randomization (ASLR) is enabled
+    cis_profile: &cis_profile level-1
+    cis_scored: &cis_scored scored
+    cis_section: &cis_section section-1
+  tags:
+    - always
+
+- name: "CIS {{ cis_code }} - {{ cis_name}}"
+  block:
+
+  - name: "APPLY | {{ cis_code }} - set runtime value"
+    shell: |
+      sysctl -w kernel.randomize_va_space=2
+    register: cis_apply_tmp
+    tags:
+      - apply
+
+  - name: "APPLY | {{ cis_code }} - set config value"
+    shell: |
+      echo "sysctl -w kernel.randomize_va_space=2" >/etc/sysctl.d/cis-1.5.3.conf
+    register: cis_apply_tmp
+    tags:
+      - apply
+
+  - name: "APPLY | {{ cis_code }} - set apply fact."
+    set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_apply":"{{ cis_apply_tmp }}"}
+    tags:
+      - apply
+
+  # TODO: Post checks
+  - name: "POST | {{ cis_code }} - gather check information"
+    shell: |
+      sysctl kernel.randomize_va_space
+      grep "kernel\.randomize_va_space" /etc/sysctl.conf /etc/sysctl.d/*
+      ls -la /etc/sysctl.d
+    register: cis_post_tmp
+    tags:
+      - post
+
+  - name: "POST | {{ cis_code }} - print check information"
+    debug:
+      var: cis_post_tmp
+    tags:
+      - post
+      - debug
+
+  - name: "POST | {{ cis_code }} - set post fact."
+    set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_post":"{{ cis_post_tmp }}"}
+    tags:
+      - post
+
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

@@ -1,0 +1,90 @@
+---
+
+- name: "APPLY | {{ cis_code }} - enable package"
+  yum:
+    name: "{{ packages_to_enable }}"
+    update_cache: yes
+    state: present
+  register: cis_apply_tmp
+  tags:
+    - apply
+
+- name: "APPLY | {{ cis_code }} - set apply fact"
+  set_fact: 
+    "cis_{{ cis_code | regex_replace('[.]','_') }}_apply": "{{ cis_apply_tmp }}"
+    cis_apply_tmp:
+  tags:
+    - apply
+
+- name: "POST | {{ cis_code }} - get packages info"
+  package_facts:
+    manager: auto
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - get package info (ansible)."
+  debug:
+    msg: "Package: {{ item }} \nInfo: {{ ansible_facts.packages[item] | default ('{}') }}"
+  with_items: "{{ packages_to_enable }}"
+  failed_when: >-
+    not (item in ansible_facts.packages)
+  register: cis_post_tmp_ansible
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - get package info (rpm)."
+  shell: |
+    rpm -q {{ item }}
+  args:
+    warn: False
+  changed_when: False
+  register: cis_post_tmp_rpm
+  with_items: "{{ packages_to_enable }}"
+  failed_when: >-
+    cis_post_tmp_rpm.rc!=0 or
+    not (cis_post_tmp_rpm.stdout is search(item)) or
+    cis_post_tmp_rpm.stderr|length>0
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - init post fact"
+  set_fact:
+    cis_post_tmp: []
+  tags:
+    - post
+
+# - name: "POST | {{ cis_code }} - gather post fact"
+#   set_fact:
+#     cis_post_tmp: "{{ cis_post_tmp + [{'rpm': cis_post_tmp_rpm.results|selectattr('_ansible_item_label','equalto',item)|map(attribute='stdout_lines')|list|flatten,  'ansible': ansible_facts.packages[item]}] }}"
+#   with_items: "{{ packages_to_enable }}"
+#   tags:
+#     - post
+
+- name: "POST | {{ cis_code }} - gather post fact"
+  set_fact:
+    cis_post_tmp: "{{ cis_post_tmp + [{'rpm': cis_post_tmp_rpm.results._variable|default('')|map(attribute='stdout_lines')|list|flatten,  'ansible': ansible_facts.packages[item]}] }}"
+  with_items: "{{ packages_to_enable }}"
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - set post fact"
+  set_fact: 
+    "cis_{{ cis_code | regex_replace('[.]','_') }}_post": "{{ cis_post_tmp }}"
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - print package information."
+  debug:
+    var: "cis_{{ cis_code | regex_replace('[.]','_') }}_post"
+  tags:
+    - post
+    - debug
+
+- name: "POST | {{ cis_code }} - print package information."
+  debug:
+    var: cis_post_tmp
+  tags:
+    - post
+    - debug
+
+...

@@ -1,0 +1,42 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '4.1.8'
+    cis_name: &cis_name Ensure login and logout events are collected
+    cis_profile: &cis_profile level-2
+    cis_scored: &cis_scored scored
+    cis_section: &cis_section section-4
+  tags:
+    - always
+
+- name: "CIS {{ cis_code }} - {{ cis_name }}."
+  block:
+
+  - name: "CIS {{ cis_code }} - configure auditd rules."
+    set_fact:
+      auditd_rules:
+        - -w /var/log/lastlog -p wa
+        - -w /var/run/faillock/ -p wa
+    tags:
+      - always
+
+  - import_tasks: ../commons/set-auditd-rules.yml
+    vars:
+      filter: logins
+      rules: "{{ auditd_rules }}"
+      cis_code: *cis_code
+
+  - name: "CIS {{ cis_code }} - clean rules configuration."
+    set_fact:
+      auditd_rules:
+    tags:
+      - always
+
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

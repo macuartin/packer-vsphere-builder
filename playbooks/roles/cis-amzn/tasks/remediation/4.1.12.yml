@@ -1,0 +1,54 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '4.1.12'
+    cis_name: &cis_name Ensure use of privileged commands is collected
+    cis_profile: &cis_profile level-2
+    cis_scored: &cis_scored scored
+    cis_section: &cis_section section-4
+  tags:
+    - always
+
+- name: "CIS {{ cis_code }} - {{ cis_name }}."
+  block:
+
+  # TODO: Multiple devices
+  # TODO: Produce priviledged bins report
+  - name: "CIS {{ cis_code }} - collect privileged programms."
+    shell: |
+      find / -xdev \( -perm -4000 -o -perm -2000 \) -type f
+    register: cis_apply_tmp_bins
+    failed_when: >-
+      cis_apply_tmp_bins.rc!=0 or
+      cis_apply_tmp_bins.stderr|length>0
+    tags:
+      - always
+
+  - name: "CIS {{ cis_code }} - configure auditd rules."
+    vars:
+      custom: "-a always,exit -F path=\\1 -F perm=x -F auid>={{ uid }} -F auid!=4294967295"
+    set_fact:
+      auditd_rules: "{{ cis_apply_tmp_bins.stdout_lines | map('regex_replace', '^(.*)$', custom) | list }}"
+    tags:
+      - always
+
+  - import_tasks: ../commons/set-auditd-rules.yml
+    vars:
+      filter: privileged
+      rules: "{{ auditd_rules }}"
+      cis_code: *cis_code
+
+  - name: "CIS {{ cis_code }} - clean rules configuration."
+    set_fact:
+      auditd_rules:
+    tags:
+      - always
+
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

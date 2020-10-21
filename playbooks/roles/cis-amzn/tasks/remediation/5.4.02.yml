@@ -1,0 +1,44 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '5.4.2'
+    cis_name: &cis_name Ensure system accounts are non-login
+    cis_section: &cis_section section-5
+    cis_scored: &cis_scored scored
+    cis_profile: &cis_profile level-1
+  tags:
+    - always
+
+- name: "CIS {{ cis_code }} - {{ cis_name }}"
+  block:
+
+  - import_tasks: ../commons/script-apply.yml
+    vars:
+      cis_script: "{{ role_path }}/scripts/cis-5.4.02-apply.sh"
+      cis_code: *cis_code
+
+  - name: "POST | {{ cis_code }} - verify passwd file"
+    shell: |
+      egrep -v "^\+" /etc/passwd | awk -F: '($1!="root" && $1!="sync" && $1!="shutdown" && $1!="halt" && $3<500 && $7!="/sbin/nologin" && $7!="/bin/false") {print}'
+    register: cis_post_tmp
+    failed_when: >-
+      cis_post_tmp.rc!=0
+      or cis_post_tmp.stderr_lines | length >0
+      or cis_post_tmp.stdout_lines | length >0
+    changed_when: False
+    tags:
+      - post
+
+  - name: "POST | {{ cis_code }} - set post fact."
+    set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_post":"{{ cis_post_tmp }}"}
+    tags:
+      - post
+
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

@@ -1,0 +1,64 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '5.4.5'
+    cis_name: &cis_name Ensure default user shell timeout is 900 seconds or less
+    cis_profile: &cis_profile level-2
+    cis_scored: &cis_scored scored
+    cis_section: &cis_section section-5
+  tags:
+    - always
+
+- name: CIS {{ cis_code }} - {{ cis_name }}
+  block:
+
+  # ADD TMOUT to the end
+  - name: "APPLY | {{ cis_code }} - add tmout."
+    lineinfile:
+      path: "{{ item }}"
+      regexp: '^\s*export\s*TMOUT\=\d+\s*$'
+      line: "export TMOUT=600"
+      state: present
+      backup: 'no'
+      backrefs: 'no'
+      create: 'no'
+      # Scan till the end
+      firstmatch: 'no'
+      # TODO: validation
+      validate: '/bin/env true %s'
+    with_items:
+      - /etc/profile
+      - /etc/bashrc
+    register: cis_apply_tmp
+    tags:
+      - apply
+
+  - name: "APPLY | {{ cis_code }} - set apply fact."
+    set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_apply":"{{ cis_apply_tmp }}"}
+    tags:
+      - apply
+
+  - name: "POST | {{ cis_code }} - find timeouts"
+    shell: |
+      grep -E "^[[:space:]]*export[[:space:]]*TMOUT[=][[:digit:]]+[[:space:]]*$" /etc/bashrc /etc/profile
+    register: cis_post_tmp
+    changed_when: False
+    failed_when: >-
+      cis_post_tmp.rc!=0 or
+      cis_post_tmp.stderr|length>0
+    tags:
+      - post
+
+  - name: "POST | {{ cis_code }} - set post fact."
+    set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_post":"{{ cis_post_tmp }}"}
+    tags:
+      - post
+
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

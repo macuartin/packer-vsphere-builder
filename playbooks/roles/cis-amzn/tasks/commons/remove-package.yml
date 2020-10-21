@@ -1,0 +1,58 @@
+---
+
+- name: "APPLY | {{ cis_code }} - gather package facts"
+  package_facts:
+    manager: auto
+  tags:
+    - apply
+
+- name: "APPLY | {{ cis_code }} - remove package"
+  yum:
+    name: "{{ packages_to_remove }}"
+    autoremove: yes
+    state: absent
+  register: cis_apply_tmp
+  tags:
+    - apply
+
+- name: "APPLY | {{ cis_code }} - set apply fact"
+  set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_apply":"{{ cis_apply_tmp }}"}
+  tags:
+    - apply
+
+- name: "POST | {{ cis_code }} - gather package facts"
+  package_facts:
+    manager: auto
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - get package info"
+  shell: |
+    rpm -q {{ item }}
+  args:
+    warn: false
+  register: cis_post_tmp
+  with_items: "{{ packages_to_remove }}"
+  when: 
+    - item in ansible_facts.packages
+  failed_when: >-
+    cis_post_tmp.rc!=0
+    or cis_post_tmp.stdout_lines | length >0
+    or cis_post_tmp.stderr_lines | length >0
+  changed_when: False
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - set post fact"
+  set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_post":"{{ cis_post_tmp }}"}
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - service status"
+  debug:
+    var: cis_post_tmp
+  tags:
+    - post
+    - debug
+
+...

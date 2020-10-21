@@ -1,0 +1,54 @@
+---
+
+# When the script returns non zero rc or produces stderr or prints 'ALERT' to stdout then check fails.
+
+- name: "POST | {{ cis_code }} - print script name"
+  debug:
+    var: cis_script
+  tags:
+    - post
+    - debug
+
+- name: "POST | {{ cis_code }} - copy post script"
+  copy:
+    src: "{{ cis_script }}"
+    dest: "/root/cis-{{ cis_code }}-post.sh"
+    owner: root
+    group: root
+    mode: 'u=rwx,g=,o='
+    backup: 'no'
+    force: 'yes'
+    remote_src: 'no'
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - execute post script"
+  command: "/root/cis-{{ cis_code }}-post.sh"
+  failed_when: >-
+    cis_post_tmp.rc!=0 or
+    cis_post_tmp.stdout is search('ALERT') or
+    cis_post_tmp.stderr|length>0
+  register: cis_post_tmp
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - clean post script"
+  file:
+    path: "/root/cis-{{ cis_code }}-post.sh"
+    state: absent
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - set post fact"
+  set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_post":"{{ cis_post_tmp }}"}
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - print script result"
+  debug:
+    var: cis_post_tmp
+  tags:
+    - post
+    - debug
+
+...

@@ -1,0 +1,26 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '3.5.3'
+    cis_name: &cis_name Ensure RDS is disabled
+    cis_profile: &cis_profile level-1
+    cis_scored: &cis_scored not_scored
+    cis_section: &cis_section section-3
+  tags:
+    - always
+
+- name: "CIS {{ cis_code }} - {{ cis_name }}"
+  block:
+  - import_tasks: ../commons/disable-network-proto.yml
+    vars:
+      networks_to_disable:
+      - rds
+      cis_code: *cis_code
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

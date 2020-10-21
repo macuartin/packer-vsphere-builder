@@ -1,0 +1,31 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '2.1.1'
+    cis_name: &cis_name Ensure chargen services are not enabled
+    cis_profile: &cis_profile level-1
+    cis_scored: &cis_scored scored
+    cis_section: &cis_section section-2
+  tags:
+    - always
+
+- name: CIS {{ cis_code }} - {{ cis_name }}
+  when:
+    ansible_distribution_version != "(Karoo)"
+  block:
+
+  - import_tasks: ../commons/disable-service.yml
+    vars:
+      services_to_disable:
+      - chargen-dgram
+      - chargen-stream
+      cis_code: *cis_code
+
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

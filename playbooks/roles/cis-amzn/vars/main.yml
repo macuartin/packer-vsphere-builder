@@ -1,0 +1,3 @@
+# Path to CIS modprobe configurations
+modprobe_filesystems_conf: "/etc/modprobe.d/cis-amzn-filesystems.conf"
+modprobe_networks_conf: "/etc/modprobe.d/cis-amzn-networks.conf"

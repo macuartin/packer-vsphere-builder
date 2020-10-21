@@ -1,0 +1,48 @@
+---
+
+- name: "APPLY | {{ cis_code }} - update parameter"
+  lineinfile:
+    path: /etc/security/pwquality.conf
+    regexp: "^\\s*{{ param }}\\s*[=]\\s*"
+    line: "{{ param }} = {{ value }}"
+    state: present
+    backup: 'no'
+    backrefs: 'no'
+    create: 'no'
+    # Scan till the end
+    firstmatch: 'no'
+    # TODO: validation
+    validate: '/bin/env true %s'
+    # Try to insert after the commented out version
+    insertafter: "^\\s*\\#+\\s*{{ param }}\\s*"
+  register: cis_apply_tmp
+  tags:
+    - apply
+
+- name: "APPLY | {{ cis_code }} - set apply fact"
+  set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_apply":"{{ cis_apply_tmp }}"}
+  tags:
+    - apply
+
+  # Parameter should be here anyway
+- name: "POST | {{ cis_code }} - get current info"
+  shell: |
+    grep -E "^{{ param }}[[:space:]][=][[:space:]]{{ value }}$" /etc/security/pwquality.conf
+  register: cis_post_tmp
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - set post fact"
+  set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_post":"{{ cis_post_tmp }}"}
+  tags:
+    - post
+
+- name: "POST | {{ cis_code }} - service status"
+  debug:
+    var: cis_post_tmp
+  tags:
+    - post
+    - debug
+
+...
+

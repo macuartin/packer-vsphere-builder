@@ -1,0 +1,52 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '2.2.15'
+    cis_name: &cis_name Ensure mail transfer agent is configured for local-only mode
+    cis_profile: &cis_profile level-1
+    cis_scored: &cis_scored scored
+    cis_section: &cis_section section-2
+  tags:
+    - always
+
+- name: CIS {{ cis_code }} - {{ cis_name }}
+  block:
+
+  # TODO: MTA configuration (sendmail in this case)
+
+  # TODO: May be check by process. MTA may run a port other than 25.
+  - name: "POST | {{ cis_code }} - get smtp bidings"
+    shell: |
+      netstat --numeric --all | grep LIST | grep -E ":25[[:space:]]"
+    register: cis_post_tmp
+    # TODO: improve failed_when condition
+    failed_when: >-
+      cis_post_tmp.rc!=0 or
+      not ((cis_post_tmp.stdout is search('127.0.0.1:25')) or (cis_post_tmp.stdout is search('::1:25'))) or
+      cis_post_tmp.stdout is search('0.0.0.0:25') or
+      cis_post_tmp.stdout is search(':::25') or
+      cis_post_tmp.stderr|length>0
+    tags:
+      - post
+
+  - name: "POST | {{ cis_code }} - set post fact."
+    set_fact: 
+      "cis_{{ cis_code | regex_replace('[.]','_') }}_post": "{{ cis_post_tmp }}"
+      cis_post_tmp:
+    tags:
+      - post
+
+  - name: "POST | {{ cis_code }} - print post fact."
+    debug:
+      var: "cis_{{ cis_code | regex_replace('[.]','_') }}_post"
+    tags:
+      - post
+
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

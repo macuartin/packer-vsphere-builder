@@ -1,0 +1,26 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '5.2.5'
+    cis_name: &cis_name Ensure SSH MaxAuthTries is set to 4 or less
+    cis_profile: &cis_profile level-1
+    cis_scored: &cis_scored scored
+    cis_section: &cis_section section-5
+  tags:
+    - always
+
+- name: CIS {{ cis_code }} - {{ cis_name }}
+  block:
+  - import_tasks: ../commons/set-sshd-parameter.yml
+    vars:
+      param: MaxAuthTries
+      value: 4
+      cis_code: *cis_code
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...

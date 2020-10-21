@@ -1,0 +1,50 @@
+---
+
+- name: Set check facts
+  set_fact:
+    cis_code: &cis_code '5.4.3'
+    cis_name: &cis_name Ensure default group for the root account is GID 0
+    cis_section: &cis_section section-5
+    cis_scored: &cis_scored scored
+    cis_profile: &cis_profile level-1
+  tags:
+    - always
+
+- name: "CIS {{ cis_code }} - {{ cis_name }}"
+  block:
+
+  - name: "APPLY | {{ cis_code }} - set root gid to zero"
+    shell: |
+      usermod -g 0 root
+    register: cis_apply_tmp
+    tags:
+      - apply
+
+  - name: "APPLY | {{ cis_code }} - set apply fact"
+    set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_apply":"{{ cis_apply_tmp }}"}
+    tags:
+      - apply
+
+  - name: "POST | {{ cis_code }} - verify passwd file"
+    shell: |
+      grep "^root:" /etc/passwd | cut -f4 -d:
+    register: cis_post_tmp
+    failed_when: >-
+      cis_post_tmp.rc!=0
+      or cis_post_tmp.stdout!='0'
+    changed_when: False
+    tags:
+      - post
+
+  - name: "POST | {{ cis_code }} - set post fact"
+    set_fact: {"cis_{{ cis_code | regex_replace('[.]','_') }}_post":"{{ cis_post_tmp }}"}
+    tags:
+      - post
+
+  tags:
+    - *cis_profile
+    - *cis_section
+    - *cis_code
+    - *cis_scored
+
+...
