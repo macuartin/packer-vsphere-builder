@@ -1,0 +1,118 @@
+{
+  "variables": {
+    "AWS_REGION": "{{env `AWS_REGION`}}",
+    "AMI_TAG": "amilinuxv2-{{isotime \"2006-01-02-15-04-05\"}}",
+    "AMI_FILTER": "amzn2-ami-hvm-*-x86_64-ebs",
+    "AMI_OWNER": "amazon"
+  },
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "region": "{{user `AWS_REGION`}}",
+      "source_ami_filter": {
+        "filters": {
+          "virtualization-type": "hvm",
+          "name": "{{user `AMI_FILTER`}}",
+          "root-device-type": "ebs"
+        },
+        "owners": ["amazon"],
+        "most_recent": true
+      },
+      "instance_type": "m5.large",
+      "ssh_keypair_name": "common-openvpn",
+      "ssh_private_key_file": "~/clearscale/clients/avaldigitallabs/moondrop-aval-credentials/ssh-keys/common-openvpn.pem",
+      "ssh_username": "ec2-user",
+      "ssh_timeout": "10m",
+      "ssh_pty": true,
+      "associate_public_ip_address": true,
+      "ami_name": "{{user `AMI_TAG`}}",
+      "tags": {
+        "Name": "{{user `AMI_TAG`}}",
+        "PackerVersion": "{{packer_version}}"
+      },
+      "snapshot_tags" : {
+        "Name": "{{user `AMI_TAG`}}",
+        "PackerVersion": "{{packer_version}}"
+      },
+      "ami_description": "AMILinux v2 hardened image. Created with Packer",
+      "ami_users": "{{user `ami_users`}}",
+      "launch_block_device_mappings": [
+        {
+          "device_name": "/dev/xvda",
+          "volume_size": 30,
+          "volume_type": "gp2",
+          "delete_on_termination": true
+        },
+        {
+          "device_name": "/dev/sdt",
+          "volume_size": 1,
+          "volume_type": "gp2",
+          "delete_on_termination": true
+        },
+        {
+          "device_name": "/dev/sdv",
+          "volume_size": 1,
+          "volume_type": "gp2",
+          "delete_on_termination": true
+        },
+        {
+          "device_name": "/dev/sdw",
+          "volume_size": 1,
+          "volume_type": "gp2",
+          "delete_on_termination": true
+        },
+        {
+          "device_name": "/dev/sdl",
+          "volume_size": 1,
+          "volume_type": "gp2",
+          "delete_on_termination": true
+        },
+        {
+          "device_name": "/dev/sdj",
+          "volume_size": 1,
+          "volume_type": "gp2",
+          "delete_on_termination": true
+        },
+        {
+          "device_name": "/dev/sdh",
+          "volume_size": 1,
+          "volume_type": "gp2",
+          "delete_on_termination": true
+        }
+      ],
+      "run_tags": {
+        "Name": "Packer: {{user `AMI_TAG`}}",
+        "PackerVersion": "{{packer_version}}"
+      },
+      "run_volume_tags": {
+        "Name": "Packer: {{user `AMI_TAG`}}",
+        "PackerVersion": "{{packer_version}}"
+      }
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "ansible",
+      "playbook_file": "playbooks/cis-amzn.yml",
+      "ansible_env_vars": [
+        "ANSIBLE_HOST_KEY_CHECKING=False",
+        "ANSIBLE_NOCOLOR=True"
+      ],
+      "extra_arguments": [
+        "--skip-tags=debug,test"
+      ]
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "manifest",
+      "output": "manifests/amilinuxv2-manifest.json",
+      "strip_path": true,
+      "custom_data": {
+        "region": "{{user `AWS_REGION`}}",
+        "tag": "{{user `AMI_TAG`}}",
+        "packer_version": "{{packer_version}}"
+      }
+    }
+  ]
+}

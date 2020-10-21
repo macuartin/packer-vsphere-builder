@@ -1,0 +1,55 @@
+{
+  "variables": {
+    "vsphere_username": "",
+    "vsphere_password": "",
+    "ssh_username": "",
+    "ssh_password": "",
+    "iso_paths": ""
+  },
+  
+  "builders": [
+    {
+      "type": "vsphere-iso",
+      "vcenter_server": "vcenter.vsphere65.test",
+      "username": "{{user `vsphere_username`}}",
+      "password": "{{user `vsphere_password`}}",
+      "insecure_connection": "true",
+      "vm_name": "hardened-rhel-7",
+      "host": "esxi-1.vsphere65.test",
+      "guest_os_type": "rhel7Guest",
+      "ssh_username": "{{user `ssh_username`}}",
+      "ssh_password": "{{user `ssh_password`}}",
+      "CPUs": 1,
+      "RAM": 1024,
+      "RAM_reserve_all": true,
+      "disk_controller_type": "pvscsi",
+      "disk_size": 32768,
+      "disk_thin_provisioned": true,
+      "network_card": "vmxnet3",
+      "iso_paths": [
+        "{{user `iso_paths`}}"
+      ],
+      "floppy_files": [
+        "{{template_dir}}/preseed.cfg"
+      ],
+      "boot_command": [
+        "<enter><wait><f6><wait><esc><wait>",
+        "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "<bs><bs><bs>",
+        "/install/vmlinuz",
+        " initrd=/install/initrd.gz",
+        " priority=critical",
+        " locale=en_US",
+        " file=/media/preseed.cfg",
+        "<enter>"
+      ]
+    }
+  ]
+}
