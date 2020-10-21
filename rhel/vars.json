@@ -3,5 +3,5 @@
   "vsphere_password": "",
   "ssh_username": "",
   "ssh_password": "",
-  "iso_paths": ""
+  "iso_paths": "[datastore1] ISO/ubuntu-16.04.3-server-amd64.iso"
 }
