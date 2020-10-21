@@ -3,9 +3,9 @@
 ## Packer
 
 ```bash
-packer validate ubuntu-xenial.json
+packer validate rhel-7.json
 
-packer build -var-file="vars.json" amazon.json
+packer build -var-file="vars.json" rhel-7.json
 ```
 
 ## Terraform
