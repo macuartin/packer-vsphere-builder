@@ -1,7 +1,9 @@
 {
   "variables": {
     "vsphere_username": "",
-    "vsphere_password": ""
+    "vsphere_password": "",
+    "vm_template": "",
+    "vm_name": ""
   },
   "builders": [
     {

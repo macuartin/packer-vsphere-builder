@@ -1,4 +1,0 @@
-playbooks/cis-amzn.retry
-.report/*
-!.report/.gitkeep
-
