@@ -3,7 +3,9 @@
     "vsphere_username": "",
     "vsphere_password": "",
     "vm_template": "",
-    "vm_name": ""
+    "vm_name": "",
+    "ssh_username": "",
+    "ssh_password": ""
   },
   "builders": [
     {
@@ -12,7 +14,8 @@
       "convert_to_template": "true",
       "username":            "{{user `vsphere_username`}}",
       "password":            "{{user `vsphere_password`}}",
-      "ssh_username": "terraform",
+      "ssh_username": "{{user `ssh_username`}}",
+      "ssh_password": "{{user `ssh_password`}}",
       "insecure_connection": "true",
       "template": "{{user `vm_template`}}",
       "vm_name":  "{{user `vm_name`}}-{{timestamp}}",
