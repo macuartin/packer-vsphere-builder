@@ -1,0 +1,11 @@
+---
+
+- name: Harden Server RHEL7
+  hosts: all
+  become: yes
+
+  roles:
+    # - cis-amzn
+    - RHEL7-CIS
+
+...
