@@ -17,3 +17,15 @@ terraform plan -var-file="config/dev.tfvars"
 
 terraform apply -var-file="config/dev.tfvars"
 ```
+
+## Vagrant
+
+```bash
+vagrant up --provision
+
+vagrant ssh hardened
+
+vagrant halt hardened
+
+vagrant destroy hardened
+```
