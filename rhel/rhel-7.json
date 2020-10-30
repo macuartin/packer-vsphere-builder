@@ -3,6 +3,7 @@
     {
       "type": "vsphere-iso",
       "username": "{{user `vsphere-user`}}",
+      "password": "{{user `vsphere-password`}}",
       "vcenter_server": "VCENTERIV.bancoavvillas.net",
       "vm_name": "{{user `vm-name`}}-{{timestamp}}",
       "CPUs": "1",
@@ -37,7 +38,6 @@
       ],
       "ip_wait_address": "10.10.8.0/24",
       "notes": "Build via Packer",
-      "password": "{{user `vsphere-password`}}",
       "ssh_password": "server",
       "ssh_username": "root",
       "storage": [
