@@ -1,14 +1,6 @@
 {
   "iso_url": "[ISO-CCP_A9000_PRC_VMWareIII_Prod_Lun002] ISO/rhel-server-7.8-x86_64-dvd.iso",
-  "vm-cpu-num": "1",
-  "vm-disk-size": "25600",
-  "vm-mem-size": "1024",
   "vm-name": "RHEL78-Template",
-  "vsphere-cluster": "Cluster_Contenedores",
-  "vsphere-datacenter": "Bancoavvillas-icloud",
-  "vsphere-datastore": "CCP_A9000_PRC_VMWareIV_Prod_Lun005",
-  "vsphere-network": "Vlan_36",
   "vsphere-password": "T3rraf0rm",
-  "vsphere-server": "VCENTERIV.bancoavvillas.net",
   "vsphere-user": "terraform"
 }
