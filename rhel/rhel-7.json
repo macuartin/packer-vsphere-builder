@@ -1,32 +1,51 @@
 {
-  "variables": {
-    "vsphere_username": "",
-    "vsphere_password": "",
-    "vm_template": "",
-    "vm_name": "",
-    "ssh_username": "",
-    "ssh_password": ""
-  },
   "builders": [
     {
-      "type": "vsphere-clone",
-
-      "convert_to_template": "true",
-      "username":            "{{user `vsphere_username`}}",
-      "password":            "{{user `vsphere_password`}}",
-      "ssh_username": "{{user `ssh_username`}}",
-      "ssh_password": "{{user `ssh_password`}}",
+      "CPUs": "{{user `vm-cpu-num`}}",
+      "RAM": "{{user `vm-mem-size`}}",
+      "RAM_reserve_all": false,
+      "boot_command": [
+        "<esc><wait>",
+        "linux ks=hd:fd0:/ks.cfg<enter>",
+        "ipv6.disable=1 autoinstall ds=nocloud",
+        "<enter>"
+      ],
+      "boot_order": "disk,cdrom,floppy",
+      "boot_wait": "10s",
+      "cluster": "{{user `vsphere-cluster`}}",
+      "convert_to_template": true,
+      "datacenter": "{{user `vsphere-datacenter`}}",
+      "datastore": "{{user `vsphere-datastore`}}",
+      "disk_controller_type": "pvscsi",
+      "floppy_files": [
+        "ks.cfg"
+      ],
+      "guest_os_type": "rhel7_64Guest",
       "insecure_connection": "true",
-      "template": "{{user `vm_template`}}",
-      "vm_name":  "{{user `vm_name`}}-{{timestamp}}",
-
-      "vcenter_server": "",
-      "cluster": "",
-      "host":     "",
-      "datacenter": "",
-      "resource_pool": "",
-      "datastore": "",
-      "communicator": "ssh"
+      "iso_paths": [
+        "{{user `iso_url`}}"
+      ],
+      "network_adapters": [
+        {
+          "network": "{{user `vsphere-network`}}",
+          "network_card": "vmxnet3"
+        }
+      ],
+      "ip_wait_address": "10.10.8.0/24",
+      "notes": "Build via Packer",
+      "password": "{{user `vsphere-password`}}",
+      "ssh_password": "server",
+      "ssh_username": "root",
+      "storage": [
+        {
+          "disk_size": "{{user `vm-disk-size`}}",
+          "disk_thin_provisioned": true
+        }
+      ],
+      "type": "vsphere-iso",
+      "username": "{{user `vsphere-user`}}",
+      "vcenter_server": "{{user `vsphere-server`}}",
+      "vm_name": "{{user `vm-name`}}-{{timestamp}}"
     }
   ],
   "provisioners": [
@@ -34,7 +53,7 @@
       "type": "ansible",
       "playbook_file": "../playbooks/cis.yml",
       "extra_arguments": [
-        ""
+        "--tags=patch"
       ]
     }
   ]
