@@ -1,4 +1,4 @@
-# packer-vsphere-builder
+# packer-vsphere-iso-builder
 
 [![python](https://img.shields.io/badge/python-v3.7.X-green.svg)](https://www.python.org/)
 [![pip](https://img.shields.io/badge/pip-v10.0.X-yellow.svg)](https://pypi.org/project/pip/)
