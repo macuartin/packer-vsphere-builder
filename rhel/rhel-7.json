@@ -1,6 +1,10 @@
 {
   "builders": [
     {
+      "type": "vsphere-iso",
+      "username": "{{user `vsphere-user`}}",
+      "vcenter_server": "{{user `vsphere-server`}}",
+      "vm_name": "{{user `vm-name`}}-{{timestamp}}",
       "CPUs": "{{user `vm-cpu-num`}}",
       "RAM": "{{user `vm-mem-size`}}",
       "RAM_reserve_all": false,
@@ -41,11 +45,7 @@
           "disk_size": "{{user `vm-disk-size`}}",
           "disk_thin_provisioned": true
         }
-      ],
-      "type": "vsphere-iso",
-      "username": "{{user `vsphere-user`}}",
-      "vcenter_server": "{{user `vsphere-server`}}",
-      "vm_name": "{{user `vm-name`}}-{{timestamp}}"
+      ]
     }
   ],
   "provisioners": [
